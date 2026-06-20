@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Chameleon.io 🦎</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="leaderboard">
+      <h3>🏆 Leaderboard</h3>
+      <ol id="lb-list"></ol>
+    </div>
+
+    <div id="stats">
+      <div class="stat"><span class="stat-label">Mass</span><span id="stat-mass">0</span></div>
+      <div class="stat"><span class="stat-label">Kills</span><span id="stat-kills">0</span></div>
+    </div>
+
+    <div id="camo-wrap" title="Camouflage (Right-click / Shift)">
+      <div id="camo-bar"><div id="camo-fill"></div></div>
+      <span class="camo-label">CAMO</span>
+    </div>
+
+    <canvas id="minimap" width="160" height="160"></canvas>
+
+    <div id="touch-controls" class="hidden">
+      <div id="joystick"><div id="joy-knob"></div></div>
+      <div id="action-btns">
+        <button id="btn-camo" class="touch-btn">
+          <span class="btn-fill"></span>
+          <span class="btn-label">CAMO</span>
+        </button>
+        <button id="btn-tongue" class="touch-btn">👅</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="menu">
+    <div class="menu-card">
+      <h1>Chameleon<span>.io</span> 🦎</h1>
+      <p class="tag">Shoot your tongue. Eat bugs. Grow. Camouflage to survive.</p>
+      <input id="name" maxlength="16" placeholder="Your name" autocomplete="off" />
+      <button id="play">Play</button>
+      <div id="death" class="hidden">
+        <p id="death-msg"></p>
+      </div>
+      <ul class="howto">
+        <li><b>Move</b> — point with the mouse (or the joystick on phones)</li>
+        <li><b>Tongue</b> — Left&nbsp;click / Space (or the 👅 button)</li>
+        <li><b>Camouflage</b> — Right&nbsp;click / Shift (or the CAMO button)</li>
+        <li>You can only eat chameleons noticeably smaller than you. Hide from the big ones!</li>
+      </ul>
+      <p class="note">Single-player vs. AI. For online multiplayer, run the server (see README).</p>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -7,6 +7,15 @@ chameleons, grow bigger, and **camouflage** to vanish from predators hunting you
 Built with **Node.js + Express + Socket.IO** (authoritative server) and an
 **HTML5 Canvas** client. Bots keep the world busy even when you play solo.
 
+## ▶️ Play now (no install)
+
+A browser build (single-player vs. AI, same engine) auto-deploys to GitHub Pages:
+
+**https://rainbovveinsss.github.io/io-game/**
+
+> The link goes live a minute or two after the "Deploy to GitHub Pages" Action
+> finishes. For real-time online multiplayer, run the Node server (below).
+
 ## Features
 
 - 🎯 **Tongue mechanic** — shoot a sticky tongue toward your cursor to grab bugs
