@@ -1,0 +1,24 @@
+{
+  "name": "chameleon-io",
+  "version": "1.0.0",
+  "description": "A multiplayer .io game inspired by Meccha Chameleon — shoot your tongue, eat bugs, grow, and camouflage to survive.",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "keywords": [
+    "io-game",
+    "multiplayer",
+    "chameleon",
+    "game",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
