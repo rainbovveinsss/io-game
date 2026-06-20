@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+
+# Build output
+/dist/
+/build/
+/bin/
+/obj/
+/out/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
