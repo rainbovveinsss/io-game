@@ -11,18 +11,33 @@ const playBtn = document.getElementById('play');
 const deathBox = document.getElementById('death');
 const deathMsg = document.getElementById('death-msg');
 
-let W = (canvas.width = window.innerWidth);
-let H = (canvas.height = window.innerHeight);
-window.addEventListener('resize', () => {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-});
+// Touch-device detection (coarse pointer or no hover).
+const touchMode = window.matchMedia('(pointer: coarse)').matches
+  || ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (touchMode) document.body.classList.add('touch');
+
+// ---- canvas sizing with device-pixel-ratio for crisp rendering ----
+let viewW = 0;
+let viewH = 0;
+let dpr = 1;
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  viewW = window.innerWidth;
+  viewH = window.innerHeight;
+  canvas.width = Math.round(viewW * dpr);
+  canvas.height = Math.round(viewH * dpr);
+  canvas.style.width = `${viewW}px`;
+  canvas.style.height = `${viewH}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+resize();
 
 const socket = io();
 let myId = null;
 let playing = false;
 
-// Latest server snapshot + a render copy we interpolate toward.
 let world = { WIDTH: 4500, HEIGHT: 4500 };
 let serverPlayers = new Map();
 const renderPlayers = new Map();
@@ -30,13 +45,13 @@ let food = [];
 let leaderboard = [];
 let self = null;
 
-// Camera (smoothly follows the player).
 const cam = { x: 2250, y: 2250, zoom: 1 };
 
-// ---- input ----
-const mouse = { x: W / 2, y: H / 2 };
+// ---- desktop input ----
+const mouse = { x: viewW / 2, y: viewH / 2 };
 let firing = false;
 let camo = false;
+const lastDir = { x: 1, y: 0 }; // remembered aim for mobile when joystick idle
 
 canvas.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
 canvas.addEventListener('mousedown', (e) => {
@@ -58,16 +73,72 @@ window.addEventListener('keyup', (e) => {
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') camo = false;
 });
 
-// touch: drag to aim, two-finger for camo
-canvas.addEventListener('touchstart', (e) => {
-  firing = true;
-  if (e.touches.length >= 2) camo = true;
-}, { passive: true });
-canvas.addEventListener('touchmove', (e) => {
-  mouse.x = e.touches[0].clientX;
-  mouse.y = e.touches[0].clientY;
-}, { passive: true });
-canvas.addEventListener('touchend', () => { firing = false; camo = false; }, { passive: true });
+// ---- touch input: virtual joystick + action buttons ----
+const joy = { active: false, id: null, dx: 0, dy: 0, mag: 0 };
+const JOY_R = 48;
+const joyEl = document.getElementById('joystick');
+const knobEl = document.getElementById('joy-knob');
+const btnTongue = document.getElementById('btn-tongue');
+const btnCamo = document.getElementById('btn-camo');
+
+function setKnob(px, py) {
+  knobEl.style.transform = `translate(${px}px, ${py}px)`;
+}
+
+function updateJoy(clientX, clientY) {
+  const rect = joyEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+  const len = Math.hypot(dx, dy);
+  const clamped = Math.min(len, JOY_R);
+  const nx = len ? dx / len : 0;
+  const ny = len ? dy / len : 0;
+  joy.dx = nx;
+  joy.dy = ny;
+  joy.mag = clamped / JOY_R;
+  setKnob(nx * clamped, ny * clamped);
+}
+
+joyEl.addEventListener('touchstart', (e) => {
+  const t = e.changedTouches[0];
+  joy.active = true;
+  joy.id = t.identifier;
+  updateJoy(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+  if (!joy.active) return;
+  for (const t of e.changedTouches) {
+    if (t.identifier === joy.id) { updateJoy(t.clientX, t.clientY); e.preventDefault(); }
+  }
+}, { passive: false });
+
+function endJoyTouch(e) {
+  if (!joy.active) return;
+  for (const t of e.changedTouches) {
+    if (t.identifier === joy.id) {
+      joy.active = false; joy.id = null; joy.dx = 0; joy.dy = 0; joy.mag = 0; setKnob(0, 0);
+    }
+  }
+}
+window.addEventListener('touchend', endJoyTouch);
+window.addEventListener('touchcancel', endJoyTouch);
+
+// Action buttons: support both touch and mouse (so they work in desktop testing).
+function bindHold(el, on, off) {
+  el.addEventListener('touchstart', (e) => { on(); e.preventDefault(); }, { passive: false });
+  el.addEventListener('touchend', (e) => { off(); e.preventDefault(); }, { passive: false });
+  el.addEventListener('touchcancel', off);
+  el.addEventListener('mousedown', (e) => { on(); e.preventDefault(); });
+  el.addEventListener('mouseup', off);
+  el.addEventListener('mouseleave', off);
+}
+bindHold(btnTongue, () => { firing = true; }, () => { firing = false; });
+bindHold(btnCamo, () => { camo = true; btnCamo.classList.add('on'); },
+  () => { camo = false; btnCamo.classList.remove('on'); });
 
 // ---- networking ----
 socket.on('joined', ({ id }) => { myId = id; });
@@ -81,8 +152,6 @@ socket.on('state', (s) => {
   const next = new Map();
   for (const p of s.players) next.set(p.id, p);
   serverPlayers = next;
-
-  // prune render copies that vanished
   for (const id of [...renderPlayers.keys()]) {
     if (!next.has(id)) renderPlayers.delete(id);
   }
@@ -119,22 +188,40 @@ function escapeHtml(s) {
 playBtn.addEventListener('click', join);
 nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') join(); });
 
-// send input ~30/s
+// ---- send input ~30/s ----
 setInterval(() => {
   if (!playing || !self) return;
-  // convert mouse (screen) to world coords
-  const wx = cam.x + (mouse.x - W / 2) / cam.zoom;
-  const wy = cam.y + (mouse.y - H / 2) / cam.zoom;
-  socket.emit('input', { mx: wx, my: wy, fire: firing, camo });
+
+  if (touchMode) {
+    if (joy.active && joy.mag > 0.12) {
+      lastDir.x = joy.dx; lastDir.y = joy.dy;
+      socket.emit('input', {
+        mx: self.x + joy.dx * 600,
+        my: self.y + joy.dy * 600,
+        fire: firing, camo, move: true,
+      });
+    } else {
+      // keep facing the last direction but stop moving
+      socket.emit('input', {
+        mx: self.x + lastDir.x * 600,
+        my: self.y + lastDir.y * 600,
+        fire: firing, camo, move: false,
+      });
+    }
+    return;
+  }
+
+  const wx = cam.x + (mouse.x - viewW / 2) / cam.zoom;
+  const wy = cam.y + (mouse.y - viewH / 2) / cam.zoom;
+  socket.emit('input', { mx: wx, my: wy, fire: firing, camo, move: true });
 }, 1000 / 30);
 
-// ---- render loop ----
+// ---- render ----
 function lerp(a, b, t) { return a + (b - a) * t; }
 
 function render() {
   requestAnimationFrame(render);
 
-  // interpolate render players toward server snapshot
   for (const [id, sp] of serverPlayers) {
     let rp = renderPlayers.get(id);
     if (!rp) { rp = { ...sp }; renderPlayers.set(id, rp); }
@@ -150,26 +237,25 @@ function render() {
     rp.mass = sp.mass;
   }
 
-  // camera follows self
   if (self) {
-    const target = self;
-    cam.x = lerp(cam.x, target.x, 0.12);
-    cam.y = lerp(cam.y, target.y, 0.12);
-    const desiredZoom = Math.max(0.55, Math.min(1.1, 36 / Math.sqrt(self.mass)));
+    cam.x = lerp(cam.x, self.x, 0.12);
+    cam.y = lerp(cam.y, self.y, 0.12);
+    // zoom out a touch on small / portrait screens so you can see more
+    const screenFactor = Math.max(0.62, Math.min(1, Math.min(viewW, viewH) / 760));
+    const desiredZoom = Math.max(0.5, Math.min(1.1, 36 / Math.sqrt(self.mass))) * screenFactor;
     cam.zoom = lerp(cam.zoom, desiredZoom, 0.05);
   }
 
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0, 0, viewW, viewH);
   drawBackground();
 
   ctx.save();
-  ctx.translate(W / 2, H / 2);
+  ctx.translate(viewW / 2, viewH / 2);
   ctx.scale(cam.zoom, cam.zoom);
   ctx.translate(-cam.x, -cam.y);
 
   drawWorldBounds();
   for (const f of food) drawBug(f);
-  // draw players sorted so the biggest are on top
   const ordered = [...renderPlayers.values()].sort((a, b) => a.r - b.r);
   for (const p of ordered) drawChameleon(p);
 
@@ -181,17 +267,16 @@ function render() {
 
 function drawBackground() {
   ctx.fillStyle = '#1c3d27';
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, viewW, viewH);
 
-  // grid that scrolls with the camera for a sense of motion
   const grid = 80 * cam.zoom;
-  const ox = ((-cam.x * cam.zoom + W / 2) % grid + grid) % grid;
-  const oy = ((-cam.y * cam.zoom + H / 2) % grid + grid) % grid;
+  const ox = ((-cam.x * cam.zoom + viewW / 2) % grid + grid) % grid;
+  const oy = ((-cam.y * cam.zoom + viewH / 2) % grid + grid) % grid;
   ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  for (let x = ox; x < W; x += grid) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
-  for (let y = oy; y < H; y += grid) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  for (let x = ox; x < viewW; x += grid) { ctx.moveTo(x, 0); ctx.lineTo(x, viewH); }
+  for (let y = oy; y < viewH; y += grid) { ctx.moveTo(0, y); ctx.lineTo(viewW, y); }
   ctx.stroke();
 }
 
@@ -208,7 +293,6 @@ function drawBug(f) {
   ctx.beginPath();
   ctx.ellipse(0, 0, 5, 7, 0, 0, Math.PI * 2);
   ctx.fill();
-  // little wings
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.beginPath();
   ctx.ellipse(-5, -2, 4, 2, -0.6, 0, Math.PI * 2);
@@ -224,7 +308,6 @@ function drawChameleon(p) {
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  // tongue (draw under body origin but over background)
   if (p.tongue) {
     ctx.strokeStyle = `hsl(${(p.hue + 320) % 360}, 70%, 60%)`;
     ctx.lineWidth = Math.max(3, r * 0.18);
@@ -233,7 +316,6 @@ function drawChameleon(p) {
     ctx.moveTo(p.x, p.y);
     ctx.lineTo(p.tongue.x, p.tongue.y);
     ctx.stroke();
-    // sticky tip
     ctx.fillStyle = `hsl(${(p.hue + 320) % 360}, 80%, 70%)`;
     ctx.beginPath();
     ctx.arc(p.tongue.x, p.tongue.y, r * 0.22 + 3, 0, Math.PI * 2);
@@ -246,7 +328,6 @@ function drawChameleon(p) {
   const bodyLight = `hsl(${p.hue}, 55%, 58%)`;
   const bodyDark = `hsl(${p.hue}, 60%, 42%)`;
 
-  // curled tail (behind the body)
   ctx.strokeStyle = bodyDark;
   ctx.lineWidth = r * 0.45;
   ctx.lineCap = 'round';
@@ -256,7 +337,6 @@ function drawChameleon(p) {
   ctx.quadraticCurveTo(-r * 1.35, r * 0.95, -r * 0.95, r * 0.75);
   ctx.stroke();
 
-  // legs
   ctx.strokeStyle = bodyDark;
   ctx.lineWidth = r * 0.22;
   for (const [lx, ly] of [[-0.2, 0.75], [-0.2, -0.75], [0.45, 0.7], [0.45, -0.7]]) {
@@ -266,7 +346,6 @@ function drawChameleon(p) {
     ctx.stroke();
   }
 
-  // body
   const grad = ctx.createLinearGradient(0, -r, 0, r);
   grad.addColorStop(0, bodyLight);
   grad.addColorStop(1, bodyDark);
@@ -275,7 +354,6 @@ function drawChameleon(p) {
   ctx.ellipse(0, 0, r * 1.05, r * 0.78, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // crest along the back
   ctx.fillStyle = `hsl(${p.hue}, 65%, 35%)`;
   ctx.beginPath();
   ctx.moveTo(-r * 0.4, -r * 0.7);
@@ -284,13 +362,11 @@ function drawChameleon(p) {
   ctx.closePath();
   ctx.fill();
 
-  // head
   ctx.fillStyle = bodyLight;
   ctx.beginPath();
   ctx.ellipse(r * 0.85, 0, r * 0.5, r * 0.45, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // eye turret
   ctx.fillStyle = bodyDark;
   ctx.beginPath();
   ctx.arc(r * 0.85, -r * 0.28, r * 0.28, 0, Math.PI * 2);
@@ -306,7 +382,6 @@ function drawChameleon(p) {
 
   ctx.restore();
 
-  // name + outline for self
   ctx.save();
   ctx.globalAlpha = Math.max(alpha, 0.4);
   if (p.isSelf) {
@@ -326,14 +401,18 @@ function drawChameleon(p) {
   ctx.restore();
 }
 
-// ---- HUD ----
 function drawHUD() {
   if (!self) return;
   document.getElementById('stat-mass').textContent = self.mass;
   document.getElementById('stat-kills').textContent = self.kills;
-  document.getElementById('camo-fill').style.width = `${self.camo}%`;
-  document.getElementById('camo-fill').style.filter =
-    self.camoActive ? 'brightness(1.4) saturate(1.4)' : 'none';
+
+  if (touchMode) {
+    btnCamo.querySelector('.btn-fill').style.height = `${self.camo}%`;
+  } else {
+    const fill = document.getElementById('camo-fill');
+    fill.style.width = `${self.camo}%`;
+    fill.style.filter = self.camoActive ? 'brightness(1.4) saturate(1.4)' : 'none';
+  }
 
   const list = document.getElementById('lb-list');
   list.innerHTML = '';

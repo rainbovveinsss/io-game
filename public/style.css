@@ -161,3 +161,117 @@ html, body {
   padding-top: 14px;
 }
 .howto b { color: #8af0ad; }
+
+/* ---------- Touch controls ---------- */
+#touch-controls { position: absolute; inset: 0; pointer-events: none; }
+
+#joystick {
+  position: absolute;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(26px, env(safe-area-inset-bottom));
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: rgba(10, 30, 18, 0.4);
+  border: 2px solid rgba(120, 230, 150, 0.35);
+  pointer-events: auto;
+  touch-action: none;
+}
+#joy-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #7fe6a0, #2bbf7e);
+  border: 2px solid rgba(255,255,255,0.5);
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+#action-btns {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(26px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+.touch-btn {
+  position: relative;
+  pointer-events: auto;
+  border: 2px solid rgba(255,255,255,0.45);
+  color: #06210f;
+  font-weight: bold;
+  cursor: pointer;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#btn-tongue {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  font-size: 46px;
+  background: radial-gradient(circle at 40% 35%, #ff8fb0, #e0466f);
+}
+#btn-tongue:active { filter: brightness(1.15); transform: scale(.95); }
+#btn-camo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(8, 24, 15, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#btn-camo .btn-fill {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(54,208,122,.25), rgba(54,208,122,.85));
+  transition: height .1s linear;
+  z-index: 0;
+}
+#btn-camo .btn-label {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #eafff0;
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+#btn-camo.on { box-shadow: 0 0 0 3px rgba(127,230,160,.8), 0 0 18px rgba(127,230,160,.6); }
+
+/* Show touch controls + tidy HUD on coarse-pointer / small screens */
+body.touch #touch-controls { display: block; }
+body.touch #camo-wrap { display: none; }
+body.touch #game { cursor: default; }
+
+/* ---------- Responsive / portrait ---------- */
+@media (max-width: 640px), (orientation: portrait) {
+  #leaderboard { top: 8px; right: 8px; min-width: 0; padding: 7px 10px; max-width: 44vw; }
+  #leaderboard h3 { font-size: 12px; }
+  #lb-list li { font-size: 11px; padding: 1px 0; }
+
+  #stats { top: 8px; left: 8px; gap: 6px; }
+  .stat { padding: 4px 8px; min-width: 52px; }
+  .stat-label { font-size: 9px; }
+  #stat-mass, #stat-kills { font-size: 16px; }
+
+  #minimap { width: 96px; height: 96px; top: 56px; right: 8px; bottom: auto; }
+
+  .menu-card { padding: 22px 20px; }
+  .menu-card h1 { font-size: 32px; }
+  .tag { font-size: 13px; margin-bottom: 16px; }
+  .howto { font-size: 12px; line-height: 1.5; }
+}
+
+/* Trim the leaderboard to the top few on short screens */
+@media (max-height: 560px) {
+  #lb-list li:nth-child(n+6) { display: none; }
+}
+

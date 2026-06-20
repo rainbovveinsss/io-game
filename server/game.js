@@ -65,7 +65,7 @@ export class Game {
       hue: Math.floor(rand(60, 140)), // greens by default
       alive: true,
       // input from client / bot brain
-      input: { mx: x + Math.cos(0), my: y, fire: false, camo: false },
+      input: { mx: x + Math.cos(0), my: y, fire: false, camo: false, move: true },
       // tongue state machine
       tongue: { state: 'idle', len: 0, maxLen: 0, dx: 1, dy: 0, grab: null },
       tongueCooldown: 0,
@@ -106,6 +106,7 @@ export class Game {
     p.input.my = input.my;
     p.input.fire = !!input.fire;
     p.input.camo = !!input.camo;
+    p.input.move = input.move === undefined ? true : !!input.move;
   }
 
   topUpBots() {
@@ -132,6 +133,9 @@ export class Game {
     const dy = p.input.my - p.y;
     const d = Math.hypot(dx, dy) || 1;
     p.angle = Math.atan2(dy, dx);
+
+    // Aim without moving (mobile joystick released, still facing a direction).
+    if (p.input.move === false) return;
 
     let speed = speedForMass(p.mass);
     if (p.camoActive) speed *= CAMO.MOVE_FACTOR;

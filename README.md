@@ -26,7 +26,12 @@ Built with **Node.js + Express + Socket.IO** (authoritative server) and an
 | Move | Point with the **mouse** (the chameleon follows the cursor) |
 | Tongue | **Left click** or **Space** |
 | Camouflage | **Right click** or **Shift** |
-| Touch | Drag to aim, tap to fire, two fingers to camouflage |
+| Touch (phone) | **Joystick** (bottom-left) to move & aim, **👅 button** for the tongue, **CAMO button** to hide |
+
+On phones the game adapts to **portrait/vertical** play: the canvas renders at the
+device pixel ratio for crisp visuals, the camera zooms out a little so you can see
+more, the HUD compacts, and on-screen controls appear automatically. The CAMO
+button doubles as the stealth meter (it fills as the meter recharges).
 
 ## Run it
 
