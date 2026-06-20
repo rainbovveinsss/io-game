@@ -9,12 +9,18 @@ Built with **Node.js + Express + Socket.IO** (authoritative server) and an
 
 ## ▶️ Play now (no install)
 
-A browser build (single-player vs. AI, same engine) auto-deploys to GitHub Pages:
+A **3D browser build** (single-player vs. AI, rendered with Three.js, same game
+engine) auto-deploys to GitHub Pages:
 
 **https://rainbovveinsss.github.io/io-game/**
 
-> The link goes live a minute or two after the "Deploy to GitHub Pages" Action
-> finishes. For real-time online multiplayer, run the Node server (below).
+Controls: **WASD / arrows** to move, **mouse** to look (click once to capture the
+cursor), **left-click / Space** for the tongue, **Shift / C** to camouflage. On
+phones: left **joystick** to move, drag to look, **👅 / CAMO** buttons.
+
+> The link updates a minute or two after the "Deploy to GitHub Pages" Action
+> finishes. For real-time online multiplayer, run the Node server (below) — the
+> server uses the 2D top-down client in `public/`.
 
 ## Features
 
