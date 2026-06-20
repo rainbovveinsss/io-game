@@ -1,0 +1,14 @@
+# One-click deploy to Render (https://render.com) — free tier works.
+# In Render: New → Blueprint → point it at this repo. Render reads this file.
+services:
+  - type: web
+    name: chameleon-io
+    runtime: node
+    plan: free
+    branch: claude/meccha-chameleon-io-game-ky7bwg
+    buildCommand: npm ci --omit=dev
+    startCommand: node server/index.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
