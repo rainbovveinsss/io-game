@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chameleon.io 🦎</title>
+  <title>Chameleon.io 3D 🦎</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -20,12 +20,14 @@
       <div class="stat"><span class="stat-label">Kills</span><span id="stat-kills">0</span></div>
     </div>
 
-    <div id="camo-wrap" title="Camouflage (Right-click / Shift)">
+    <div id="camo-wrap" title="Camouflage (Shift / C)">
       <div id="camo-bar"><div id="camo-fill"></div></div>
       <span class="camo-label">CAMO</span>
     </div>
 
     <canvas id="minimap" width="160" height="160"></canvas>
+
+    <div id="hint" class="hint">Click to look around · <b>WASD</b> move · <b>Mouse</b> aim · <b>Click</b> tongue · <b>Shift</b> camo</div>
 
     <div id="touch-controls" class="hidden">
       <div id="joystick"><div id="joy-knob"></div></div>
@@ -41,23 +43,31 @@
 
   <div id="menu">
     <div class="menu-card">
-      <h1>Chameleon<span>.io</span> 🦎</h1>
-      <p class="tag">Shoot your tongue. Eat bugs. Grow. Camouflage to survive.</p>
+      <h1>Chameleon<span>.io</span> 🦎<small>3D</small></h1>
+      <p class="tag">Shoot your tongue. Eat bugs. Grow. Camouflage to survive — now in 3D.</p>
       <input id="name" maxlength="16" placeholder="Your name" autocomplete="off" />
       <button id="play">Play</button>
       <div id="death" class="hidden">
         <p id="death-msg"></p>
       </div>
       <ul class="howto">
-        <li><b>Move</b> — point with the mouse (or the joystick on phones)</li>
+        <li><b>Move</b> — WASD / arrows (or the joystick on phones)</li>
+        <li><b>Look</b> — move the mouse (click once to capture); drag on phones</li>
         <li><b>Tongue</b> — Left&nbsp;click / Space (or the 👅 button)</li>
-        <li><b>Camouflage</b> — Right&nbsp;click / Shift (or the CAMO button)</li>
-        <li>You can only eat chameleons noticeably smaller than you. Hide from the big ones!</li>
+        <li><b>Camouflage</b> — Shift / C (or the CAMO button)</li>
+        <li>Eat chameleons smaller than you. Hide from the big ones!</li>
       </ul>
       <p class="note">Single-player vs. AI. For online multiplayer, run the server (see README).</p>
     </div>
   </div>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
   <script type="module" src="main.js"></script>
 </body>
 </html>
